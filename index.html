@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>منشئ ملصقات QR</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 14px 40px; background: #f3f5f8;
+    color: #172033; font-family: Tahoma, Arial, sans-serif;
+  }
+  .wrap { max-width: 760px; margin: auto; }
+  h1 { text-align: center; margin: 6px 0 8px; font-size: 27px; }
+  .sub { text-align: center; color: #657087; margin: 0 0 24px; }
+  .panel {
+    background: white; border: 1px solid #e1e6ee; border-radius: 16px;
+    padding: 20px; box-shadow: 0 8px 28px rgba(20,35,60,.06);
+  }
+  label { display:block; font-weight: bold; margin: 14px 0 7px; }
+  input, select {
+    width: 100%; padding: 13px 12px; border: 1px solid #cbd3df;
+    border-radius: 9px; font: inherit; font-size: 16px; background: white;
+  }
+  input { direction: auto; }
+  .row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  button {
+    border: 0; border-radius: 10px; padding: 14px 18px; font: inherit;
+    font-weight: bold; cursor: pointer; width: 100%; margin-top: 17px;
+  }
+  #download { background:#111827; color:white; }
+  #download:disabled { opacity:.45; cursor:not-allowed; }
+  .preview-title { margin: 24px 0 10px; font-weight:bold; }
+  .preview-wrap { display:flex; justify-content:center; }
+  #preview {
+    width:min(100%, 380px); aspect-ratio:1/1; background:#fff;
+    border:1px solid #d6dce5; border-radius:8px; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  #qr-area {
+    height:75%; display:flex; align-items:center; justify-content:center;
+    padding:4.5%; background:white;
+  }
+  #qr-holder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
+  #qr-holder canvas, #qr-holder img { max-width:100%; max-height:100%; width:auto; height:auto; }
+  #caption {
+    height:25%; background:#171717; color:white; display:flex;
+    align-items:center; justify-content:center; gap:12px; padding:8px 5%;
+  }
+  #empty-circle {
+    width: clamp(25px, 11%, 42px); aspect-ratio:1; border:3px solid white;
+    border-radius:50%; flex:0 0 auto;
+  }
+  #caption-text {
+    min-width:0; max-width:80%; font-weight:bold; line-height:1.1;
+    text-align:center; overflow-wrap:anywhere; font-size:clamp(16px, 5vw, 27px);
+  }
+  .note { color:#687386; font-size:13px; line-height:1.7; margin:12px 2px 0; }
+  #status { min-height:22px; color:#a12a2a; font-size:14px; margin-top:10px; }
+  .small { font-size:12px; color:#788397; text-align:center; margin-top:16px; }
+  @media(max-width:520px){ .row{grid-template-columns:1fr;} .panel{padding:15px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>منشئ ملصقات QR</h1>
+  <p class="sub">أنشئ رمز QR مع اسم واضح أسفله وحمّله كصورة PNG</p>
+  <div class="panel">
+    <label for="captionInput">النص الذي سيظهر أسفل رمز QR</label>
+    <input id="captionInput" type="text" placeholder="مثال: QR.H736" maxlength="60" autocomplete="off">
+
+    <label for="urlInput">الرابط</label>
+    <input id="urlInput" type="url" placeholder="https://example.com" dir="ltr" autocomplete="url">
+
+    <div class="row">
+      <div>
+        <label for="sizeInput">مقاس الملصق</label>
+        <select id="sizeInput">
+          <option value="5">5 × 5 سم</option>
+          <option value="10" selected>10 × 10 سم</option>
+          <option value="8">8 × 8 سم</option>
+        </select>
+      </div>
+      <div>
+        <label for="resolutionInput">جودة الصورة</label>
+        <select id="resolutionInput">
+          <option value="1200">عالية (1200 × 1200)</option>
+          <option value="1600" selected>عالية جداً (1600 × 1600)</option>
+          <option value="2400">للطباعة الكبيرة (2400 × 2400)</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="download" disabled>تحميل صورة PNG</button>
+    <div id="status">أدخل النص والرابط لتظهر المعاينة.</div>
+
+    <div class="preview-title">معاينة الملصق</div>
+    <div class="preview-wrap">
+      <div id="preview">
+        <div id="qr-area"><div id="qr-holder"></div></div>
+        <div id="caption">
+          <div id="empty-circle"></div>
+          <div id="caption-text">النص هنا</div>
+        </div>
+      </div>
+    </div>
+    <p class="note">التصميم مربع: 75٪ لمساحة رمز QR و25٪ للشريط السفلي. الدائرة فارغة كما طلبت. للحصول على أفضل نتيجة، استخدم رابطاً كاملاً يبدأ بـ https:// وتأكد من تجربة الرمز بعد تنزيله.</p>
+  </div>
+  <div class="small">يتم إنشاء الصورة داخل المتصفح ولا يتم حفظ النصوص أو الروابط على الموقع.</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(() => {
+  const captionInput = document.getElementById('captionInput');
+  const urlInput = document.getElementById('urlInput');
+  const sizeInput = document.getElementById('sizeInput');
+  const resolutionInput = document.getElementById('resolutionInput');
+  const qrHolder = document.getElementById('qr-holder');
+  const captionText = document.getElementById('caption-text');
+  const download = document.getElementById('download');
+  const status = document.getElementById('status');
+  let qrReady = false;
+
+  function validUrl(value) {
+    try {
+      const u = new URL(value);
+      return u.protocol === 'http:' || u.protocol === 'https:';
+    } catch (_) { return false; }
+  }
+
+  function makeQR() {
+    const label = captionInput.value.trim();
+    const url = urlInput.value.trim();
+    captionText.textContent = label || 'النص هنا';
+    captionText.style.fontSize = `clamp(14px, ${Math.max(3, Math.min(5.8, 32 / Math.max(1, (label || 'النص هنا').length)))}vw, 30px)`;
+    qrHolder.innerHTML = '';
+    qrReady = false;
+    download.disabled = true;
+
+    if (!label || !url) {
+      status.textContent = 'أدخل النص والرابط لتظهر المعاينة.';
+      return;
+    }
+    if (!validUrl(url)) {
+      status.textContent = 'يرجى إدخال رابط صحيح يبدأ بـ https:// أو http://';
+      return;
+    }
+    if (typeof QRCode === 'undefined') {
+      status.textContent = 'تعذّر تحميل مكتبة إنشاء QR. تحقق من اتصال الإنترنت ثم أعد تحميل الصفحة.';
+      return;
+    }
+
+    const qrSize = 700;
+    new QRCode(qrHolder, {
+      text: url, width: qrSize, height: qrSize,
+      colorDark: '#111111', colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+    qrReady = true;
+    download.disabled = false;
+    status.textContent = 'تم إنشاء الرمز. يمكنك الآن تحميل الصورة.';
+  }
+
+  function safeFilename(value) {
+    return value.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim().slice(0, 90) || 'QR';
+  }
+
+  function downloadPNG() {
+    if (!qrReady) return;
+    const resolution = Number(resolutionInput.value);
+    const canvas = document.createElement('canvas');
+    canvas.width = resolution;
+    canvas.height = resolution;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, resolution, resolution);
+
+    const bandHeight = Math.round(resolution * 0.25);
+    const qrAreaHeight = resolution - bandHeight;
+    const qrSide = Math.round(resolution * 0.68);
+    const qrX = Math.round((resolution - qrSide) / 2);
+    const qrY = Math.round((qrAreaHeight - qrSide) / 2);
+
+    const qrCanvas = qrHolder.querySelector('canvas');
+    const qrImg = qrHolder.querySelector('img');
+
+    function drawQR(source) {
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(source, qrX, qrY, qrSide, qrSide);
+
+      ctx.fillStyle = '#171717';
+      ctx.fillRect(0, qrAreaHeight, resolution, bandHeight);
+
+      const circleDiameter = Math.round(bandHeight * 0.48);
+      const circleX = Math.round(resolution * 0.12);
+      const circleY = Math.round(qrAreaHeight + (bandHeight - circleDiameter) / 2);
+      ctx.beginPath();
+      ctx.arc(circleX + circleDiameter/2, circleY + circleDiameter/2, circleDiameter/2 - resolution*0.004, 0, Math.PI*2);
+      ctx.lineWidth = Math.max(5, Math.round(resolution * 0.007));
+      ctx.strokeStyle = '#ffffff';
+      ctx.stroke();
+
+      const label = captionInput.value.trim();
+      const maxTextWidth = resolution * 0.70;
+      let fontSize = Math.round(bandHeight * 0.34);
+      ctx.font = `bold ${fontSize}px Tahoma, Arial, sans-serif`;
+      while (ctx.measureText(label).width > maxTextWidth && fontSize > 24) {
+        fontSize -= 2;
+        ctx.font = `bold ${fontSize}px Tahoma, Arial, sans-serif`;
+      }
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.direction = /[\u0600-\u06FF]/.test(label) ? 'rtl' : 'ltr';
+      ctx.fillText(label, resolution * 0.61, qrAreaHeight + bandHeight/2, maxTextWidth);
+
+      canvas.toBlob(blob => {
+        if (!blob) {
+          status.textContent = 'تعذّر تجهيز الصورة. حاول مرة أخرى.';
+          return;
+        }
+        const link = document.createElement('a');
+        const objectUrl = URL.createObjectURL(blob);
+        link.href = objectUrl;
+        link.download = safeFilename(label) + '.png';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+      }, 'image/png');
+    }
+
+    if (qrCanvas) drawQR(qrCanvas);
+    else if (qrImg && qrImg.complete) drawQR(qrImg);
+    else status.textContent = 'انتظر لحظة حتى يكتمل إنشاء الرمز.';
+  }
+
+  [captionInput, urlInput].forEach(el => el.addEventListener('input', makeQR));
+  download.addEventListener('click', downloadPNG);
+  makeQR();
+})();
+</script>
+</body>
+</html>
