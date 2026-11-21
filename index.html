@@ -44,11 +44,11 @@
   #qr-holder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; }
   #qr-holder canvas, #qr-holder img { max-width:100%; max-height:100%; width:auto; height:auto; }
   #caption {
-    height:25%; background:#171717; color:white; display:flex;
+    height:25%; background:#ffffff; color:#000000; display:flex;
     align-items:center; justify-content:center; gap:12px; padding:8px 5%;
   }
   #empty-circle {
-    width: clamp(25px, 11%, 42px); aspect-ratio:1; border:3px solid white;
+    width: clamp(25px, 11%, 42px); aspect-ratio:1; border:3px solid #000000;
     border-radius:50%; flex:0 0 auto;
   }
   #caption-text {
@@ -189,7 +189,7 @@
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(source, qrX, qrY, qrSide, qrSide);
 
-      ctx.fillStyle = '#171717';
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, qrAreaHeight, resolution, bandHeight);
 
       const circleDiameter = Math.round(bandHeight * 0.48);
@@ -198,7 +198,7 @@
       ctx.beginPath();
       ctx.arc(circleX + circleDiameter/2, circleY + circleDiameter/2, circleDiameter/2 - resolution*0.004, 0, Math.PI*2);
       ctx.lineWidth = Math.max(5, Math.round(resolution * 0.007));
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = '#000000';
       ctx.stroke();
 
       const label = captionInput.value.trim();
@@ -209,7 +209,7 @@
         fontSize -= 2;
         ctx.font = `bold ${fontSize}px Tahoma, Arial, sans-serif`;
       }
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#000000';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.direction = /[\u0600-\u06FF]/.test(label) ? 'rtl' : 'ltr';
