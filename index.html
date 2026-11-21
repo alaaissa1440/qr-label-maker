@@ -228,7 +228,7 @@
 
       const label = captionInput.value.trim();
       const maxTextWidth = resolution * 0.70;
-      let fontSize = Math.round(bandHeight * 0.50);
+      let fontSize = Math.round(bandHeight * 0.70);
       ctx.font = `bold ${fontSize}px Tahoma, Arial, sans-serif`;
       while (ctx.measureText(label).width > maxTextWidth && fontSize > 24) {
         fontSize -= 2;
