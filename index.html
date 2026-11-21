@@ -144,7 +144,7 @@
     const label = captionInput.value.trim();
     const url = urlInput.value.trim();
     captionText.textContent = label || 'النص هنا';
-    captionText.style.fontSize = `clamp(14px, ${Math.max(3, Math.min(6.8, 36 / Math.max(1, (label || 'النص هنا').length)))}vw, 30px)`;
+    captionText.style.fontSize = `clamp(18px, ${Math.max(4.5, Math.min(8, 44 / Math.max(1, (label || 'النص هنا').length)))}vw, 38px)`;
     qrHolder.innerHTML = '';
     qrReady = false;
     download.disabled = true;
@@ -227,8 +227,8 @@
       ctx.stroke();
 
       const label = captionInput.value.trim();
-      const maxTextWidth = resolution * 0.70;
-      let fontSize = Math.round(bandHeight * 0.70);
+      const maxTextWidth = resolution * 0.76;
+      let fontSize = Math.round(bandHeight * 0.50);
       ctx.font = `bold ${fontSize}px Tahoma, Arial, sans-serif`;
       while (ctx.measureText(label).width > maxTextWidth && fontSize > 24) {
         fontSize -= 2;
