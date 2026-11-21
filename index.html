@@ -48,8 +48,19 @@
     align-items:center; justify-content:center; gap:12px; padding:8px 5%;
   }
   #empty-circle {
-    width: clamp(25px, 11%, 42px); aspect-ratio:1; border:3px solid #000000;
-    border-radius:50%; flex:0 0 auto;
+    width: clamp(22px, 8%, 34px); height: clamp(34px, 15%, 50px);
+    border:3px solid #000000; border-radius:7px; flex:0 0 auto;
+    position:relative;
+  }
+  #empty-circle::before {
+    content:""; position:absolute; top:4px; left:50%;
+    transform:translateX(-50%); width:35%; height:2px;
+    border-radius:2px; background:#000000;
+  }
+  #empty-circle::after {
+    content:""; position:absolute; bottom:3px; left:50%;
+    transform:translateX(-50%); width:4px; height:4px;
+    border:1.5px solid #000000; border-radius:50%;
   }
   #caption-text {
     min-width:0; max-width:80%; font-weight:bold; line-height:1.1;
@@ -104,6 +115,7 @@
         </div>
       </div>
     </div>
+    <p class="note">Designed by alaa issa</p>
   </div>
   <div class="small">يتم إنشاء الصورة داخل المتصفح ولا يتم حفظ النصوص أو الروابط على الموقع.</div>
 </div>
@@ -191,13 +203,27 @@
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, qrAreaHeight, resolution, bandHeight);
 
-      const circleDiameter = Math.round(bandHeight * 0.48);
-      const circleX = Math.round(resolution * 0.12);
-      const circleY = Math.round(qrAreaHeight + (bandHeight - circleDiameter) / 2);
-      ctx.beginPath();
-      ctx.arc(circleX + circleDiameter/2, circleY + circleDiameter/2, circleDiameter/2 - resolution*0.004, 0, Math.PI*2);
-      ctx.lineWidth = Math.max(5, Math.round(resolution * 0.007));
+      const phoneHeight = Math.round(bandHeight * 0.58);
+      const phoneWidth = Math.round(phoneHeight * 0.58);
+      const phoneX = Math.round(resolution * 0.12);
+      const phoneY = Math.round(qrAreaHeight + (bandHeight - phoneHeight) / 2);
+      const phoneLine = Math.max(5, Math.round(resolution * 0.007));
       ctx.strokeStyle = '#000000';
+      ctx.lineWidth = phoneLine;
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      ctx.roundRect(phoneX, phoneY, phoneWidth, phoneHeight, Math.round(phoneWidth * 0.18));
+      ctx.stroke();
+
+      // سماعة الهاتف العلوية
+      ctx.beginPath();
+      ctx.moveTo(phoneX + phoneWidth * 0.38, phoneY + phoneHeight * 0.12);
+      ctx.lineTo(phoneX + phoneWidth * 0.62, phoneY + phoneHeight * 0.12);
+      ctx.stroke();
+
+      // زر/مؤشر أسفل الشاشة
+      ctx.beginPath();
+      ctx.arc(phoneX + phoneWidth / 2, phoneY + phoneHeight * 0.88, phoneLine * 0.55, 0, Math.PI * 2);
       ctx.stroke();
 
       const label = captionInput.value.trim();
