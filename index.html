@@ -70,6 +70,35 @@
   #status { min-height:22px; color:#a12a2a; font-size:14px; margin-top:10px; }
   .small { font-size:12px; color:#788397; text-align:center; margin-top:16px; }
   @media(max-width:520px){ .row{grid-template-columns:1fr;} .panel{padding:15px;} }
+
+  /* قالب بطاقة سنة 2027 */
+  .year-panel { margin-top: 24px; }
+  .year-preview-wrap { display:flex; justify-content:center; }
+  #yearPreview {
+    width:min(100%, 380px); aspect-ratio:1/1; background:#fff;
+    border:1px solid #aeb4bb; border-radius:7px; overflow:hidden;
+    display:flex; flex-direction:column; padding:7% 5% 5%;
+    color:#222; text-align:center;
+  }
+  #yearNumber {
+    height:43%; display:flex; align-items:center; justify-content:center;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size:clamp(76px, 27vw, 142px); line-height:1;
+    color:#252525; direction:ltr;
+  }
+  #yearDivider {
+    height:5px; min-height:5px; width:100%; background:#222;
+    margin:0 auto 3%;
+  }
+  #yearName {
+    flex:1; display:flex; align-items:flex-start; justify-content:center;
+    padding:5% 2% 0; white-space:pre-wrap; overflow-wrap:anywhere;
+    font-family:"Traditional Arabic", "Noto Naskh Arabic", Tahoma, serif; font-weight:bold;
+    font-size:clamp(25px, 8vw, 42px); line-height:1.65;
+    color:#292929; text-align:center;
+  }
+  .year-note { color:#687386; font-size:13px; line-height:1.7; margin:12px 2px 0; }
+
 </style>
 </head>
 <body>
@@ -117,6 +146,34 @@
     </div>
     <p class="note">Designed by alaa issa</p>
   </div>
+
+  <div class="panel year-panel">
+    <h2 style="text-align:center;margin:4px 0 8px;font-size:23px;">قالب سنة 2027</h2>
+    <p class="sub">اكتب اسم الشخص لمعاينة التصميم وتحميله كصورة PNG</p>
+
+    <label for="yearNameInput">اسم الشخص</label>
+    <input id="yearNameInput" type="text" placeholder="اكتب الاسم هنا" maxlength="80" autocomplete="off">
+
+    <label for="yearResolutionInput">جودة الصورة</label>
+    <select id="yearResolutionInput">
+      <option value="1200">عالية (1200 × 1200)</option>
+      <option value="1600" selected>عالية جداً (1600 × 1600)</option>
+      <option value="2400">للطباعة الكبيرة (2400 × 2400)</option>
+    </select>
+
+    <button id="yearDownload" disabled>تحميل تصميم 2027 بصيغة PNG</button>
+    <div id="yearStatus">اكتب اسم الشخص لتظهر المعاينة.</div>
+
+    <div class="preview-title">معاينة تصميم 2027</div>
+    <div class="year-preview-wrap">
+      <div id="yearPreview">
+        <div id="yearNumber">2027</div>
+        <div id="yearDivider"></div>
+        <div id="yearName">اسم الشخص</div>
+      </div>
+    </div>
+  </div>
+
   <div class="small">يتم إنشاء الصورة داخل المتصفح ولا يتم حفظ النصوص أو الروابط على الموقع.</div>
 </div>
 
@@ -229,10 +286,10 @@
       const label = captionInput.value.trim();
       const maxTextWidth = resolution * 0.76;
       let fontSize = Math.round(bandHeight * 0.50);
-      ctx.font = `bold ${fontSize}px Tahoma, Arial, sans-serif`;
+      ctx.font = `bold ${fontSize}px "Traditional Arabic", "Noto Naskh Arabic", Tahoma, serif`;
       while (ctx.measureText(label).width > maxTextWidth && fontSize > 24) {
         fontSize -= 2;
-        ctx.font = `bold ${fontSize}px Tahoma, Arial, sans-serif`;
+        ctx.font = `bold ${fontSize}px "Traditional Arabic", "Noto Naskh Arabic", Tahoma, serif`;
       }
       ctx.fillStyle = '#000000';
       ctx.textAlign = 'center';
@@ -265,6 +322,126 @@
   download.addEventListener('click', downloadPNG);
   makeQR();
 })();
+
+  // أداة تصميم بطاقة 2027 المستقلة عن أداة QR
+  (() => {
+    const nameInput = document.getElementById('yearNameInput');
+    const resolutionInput = document.getElementById('yearResolutionInput');
+    const previewName = document.getElementById('yearName');
+    const downloadButton = document.getElementById('yearDownload');
+    const status = document.getElementById('yearStatus');
+
+    function safeName(value) {
+      return value.replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, ' ').trim().slice(0, 80) || '2027';
+    }
+
+    function updatePreview() {
+      const name = nameInput.value.trim();
+      previewName.textContent = name || 'اسم الشخص';
+      downloadButton.disabled = !name;
+      status.textContent = name
+        ? 'تم تحديث المعاينة. يمكنك الآن تحميل الصورة.'
+        : 'اكتب اسم الشخص لتظهر المعاينة.';
+    }
+
+    function wrapCanvasText(ctx, text, maxWidth) {
+      const words = text.trim().split(/\s+/);
+      const lines = [];
+      let line = '';
+      for (const word of words) {
+        const test = line ? line + ' ' + word : word;
+        if (line && ctx.measureText(test).width > maxWidth) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = test;
+        }
+      }
+      if (line) lines.push(line);
+      return lines;
+    }
+
+    function downloadYearPNG() {
+      const name = nameInput.value.trim();
+      if (!name) return;
+
+      const resolution = Number(resolutionInput.value);
+      const canvas = document.createElement('canvas');
+      canvas.width = resolution;
+      canvas.height = resolution;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, resolution, resolution);
+
+      // إطار خارجي خفيف مثل النموذج.
+      ctx.strokeStyle = '#aeb4bb';
+      ctx.lineWidth = Math.max(2, Math.round(resolution * 0.002));
+      ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2,
+                     resolution - ctx.lineWidth, resolution - ctx.lineWidth);
+
+      const padding = resolution * 0.07;
+      const yearTop = resolution * 0.07;
+      const yearHeight = resolution * 0.35;
+
+      ctx.fillStyle = '#252525';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.direction = 'ltr';
+      let yearFont = Math.round(resolution * 0.29);
+      ctx.font = `${yearFont}px Georgia, "Times New Roman", serif`;
+      ctx.fillText('2027', resolution / 2, yearTop + yearHeight / 2, resolution - padding * 2);
+
+      const dividerY = resolution * 0.435;
+      ctx.fillStyle = '#222222';
+      ctx.fillRect(resolution * 0.05, dividerY, resolution * 0.90, Math.max(5, resolution * 0.006));
+
+      const maxWidth = resolution * 0.88;
+      let fontSize = Math.round(resolution * 0.25);
+      let lines = [];
+      let lineHeight = 0;
+
+      // يصغّر الاسم تلقائياً عند الحاجة حتى يبقى ضمن المساحة.
+      while (fontSize >= Math.round(resolution * 0.045)) {
+        ctx.font = `bold ${fontSize}px "Traditional Arabic", "Noto Naskh Arabic", Tahoma, serif`;
+        lines = wrapCanvasText(ctx, name, maxWidth);
+        lineHeight = fontSize * 1.55;
+        if (lines.length <= 3 && lines.every(line => ctx.measureText(line).width <= maxWidth)) break;
+        fontSize -= Math.max(2, Math.round(resolution * 0.002));
+      }
+
+      ctx.fillStyle = '#292929';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.direction = 'rtl';
+      const firstLineY = resolution * 0.58;
+      lines.forEach((line, index) => {
+        ctx.fillText(line, resolution / 2, firstLineY + index * lineHeight, maxWidth);
+      });
+
+      canvas.toBlob(blob => {
+        if (!blob) {
+          status.textContent = 'تعذّر تجهيز الصورة. حاول مرة أخرى.';
+          return;
+        }
+        const link = document.createElement('a');
+        const objectUrl = URL.createObjectURL(blob);
+        link.href = objectUrl;
+        link.download = safeName(name) + '_2027.png';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+        status.textContent = 'تم تحميل تصميم 2027 بنجاح.';
+      }, 'image/png');
+    }
+
+    nameInput.addEventListener('input', updatePreview);
+    resolutionInput.addEventListener('change', updatePreview);
+    downloadButton.addEventListener('click', downloadYearPNG);
+    updatePreview();
+  })();
+
 </script>
 </body>
 </html>
