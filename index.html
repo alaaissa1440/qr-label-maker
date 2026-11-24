@@ -154,12 +154,24 @@
     <label for="yearNameInput">اسم الشخص</label>
     <input id="yearNameInput" type="text" placeholder="اكتب الاسم هنا" maxlength="80" autocomplete="off">
 
-    <label for="yearResolutionInput">جودة الصورة</label>
-    <select id="yearResolutionInput">
-      <option value="1200">عالية (1200 × 1200)</option>
-      <option value="1600" selected>عالية جداً (1600 × 1600)</option>
-      <option value="2400">للطباعة الكبيرة (2400 × 2400)</option>
-    </select>
+    <div class="row">
+      <div>
+        <label for="yearSizeInput">مقاس الملصق</label>
+        <select id="yearSizeInput">
+          <option value="5">5 × 5 سم</option>
+          <option value="8">8 × 8 سم</option>
+          <option value="10" selected>10 × 10 سم</option>
+        </select>
+      </div>
+      <div>
+        <label for="yearResolutionInput">جودة الصورة</label>
+        <select id="yearResolutionInput">
+          <option value="1200">عالية (1200 × 1200)</option>
+          <option value="1600" selected>عالية جداً (1600 × 1600)</option>
+          <option value="2400">للطباعة الكبيرة (2400 × 2400)</option>
+        </select>
+      </div>
+    </div>
 
     <button id="yearDownload" disabled>تحميل تصميم 2027 بصيغة PNG</button>
     <div id="yearStatus">اكتب اسم الشخص لتظهر المعاينة.</div>
@@ -172,6 +184,7 @@
         <div id="yearName">اسم الشخص</div>
       </div>
     </div>
+    <p class="year-note">السنة 2027 ثابتة، ويتغير الاسم فقط. اختر مقاس الملصق 5×5 أو 8×8 أو 10×10 سم، وحدد جودة الصورة قبل التحميل.</p>
   </div>
 
   <div class="small">يتم إنشاء الصورة داخل المتصفح ولا يتم حفظ النصوص أو الروابط على الموقع.</div>
@@ -327,6 +340,7 @@
   (() => {
     const nameInput = document.getElementById('yearNameInput');
     const resolutionInput = document.getElementById('yearResolutionInput');
+    const sizeInput = document.getElementById('yearSizeInput');
     const previewName = document.getElementById('yearName');
     const downloadButton = document.getElementById('yearDownload');
     const status = document.getElementById('yearStatus');
@@ -361,11 +375,54 @@
       return lines;
     }
 
+    // إضافة بيانات أبعاد الطباعة إلى ملف PNG حتى يطابق المقاس المختار بالسنتيمتر.
+    function crc32(bytes) {
+      let crc = -1;
+      for (let i = 0; i < bytes.length; i++) {
+        crc ^= bytes[i];
+        for (let j = 0; j < 8; j++) {
+          crc = (crc >>> 1) ^ (0xEDB88320 & -(crc & 1));
+        }
+      }
+      return (crc ^ -1) >>> 0;
+    }
+
+    function makeChunk(type, data) {
+      const typeBytes = new TextEncoder().encode(type);
+      const chunk = new Uint8Array(12 + data.length);
+      const view = new DataView(chunk.buffer);
+      view.setUint32(0, data.length);
+      chunk.set(typeBytes, 4);
+      chunk.set(data, 8);
+      const crcInput = chunk.subarray(4, 8 + data.length);
+      view.setUint32(8 + data.length, crc32(crcInput));
+      return chunk;
+    }
+
+    async function addPrintSizeMetadata(blob, pixelWidth, sizeCm) {
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      // PNG: signature (8 bytes), then IHDR chunk (25 bytes).
+      const pixelsPerMeter = Math.round(pixelWidth / (sizeCm / 100));
+      const physData = new Uint8Array(9);
+      const physView = new DataView(physData.buffer);
+      physView.setUint32(0, pixelsPerMeter);
+      physView.setUint32(4, pixelsPerMeter);
+      physData[8] = 1; // unit = meter
+      const physChunk = makeChunk('pHYs', physData);
+      const insertAt = 8 + 25;
+      const result = new Uint8Array(bytes.length + physChunk.length);
+      result.set(bytes.subarray(0, insertAt), 0);
+      result.set(physChunk, insertAt);
+      result.set(bytes.subarray(insertAt), insertAt + physChunk.length);
+      return new Blob([result], { type: 'image/png' });
+    }
+
     function downloadYearPNG() {
       const name = nameInput.value.trim();
       if (!name) return;
 
       const resolution = Number(resolutionInput.value);
+      const sizeCm = Number(sizeInput.value);
       const canvas = document.createElement('canvas');
       canvas.width = resolution;
       canvas.height = resolution;
@@ -397,7 +454,7 @@
       ctx.fillRect(resolution * 0.05, dividerY, resolution * 0.90, Math.max(5, resolution * 0.006));
 
       const maxWidth = resolution * 0.88;
-      let fontSize = Math.round(resolution * 0.25);
+      let fontSize = Math.round(resolution * 0.105);
       let lines = [];
       let lineHeight = 0;
 
@@ -419,24 +476,30 @@
         ctx.fillText(line, resolution / 2, firstLineY + index * lineHeight, maxWidth);
       });
 
-      canvas.toBlob(blob => {
+      canvas.toBlob(async blob => {
         if (!blob) {
           status.textContent = 'تعذّر تجهيز الصورة. حاول مرة أخرى.';
           return;
         }
-        const link = document.createElement('a');
-        const objectUrl = URL.createObjectURL(blob);
-        link.href = objectUrl;
-        link.download = safeName(name) + '_2027.png';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
-        status.textContent = 'تم تحميل تصميم 2027 بنجاح.';
+        try {
+          const printReadyBlob = await addPrintSizeMetadata(blob, resolution, sizeCm);
+          const link = document.createElement('a');
+          const objectUrl = URL.createObjectURL(printReadyBlob);
+          link.href = objectUrl;
+          link.download = safeName(name) + '_2027_' + sizeCm + 'x' + sizeCm + 'cm.png';
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+          status.textContent = 'تم تحميل تصميم 2027 بمقاس ' + sizeCm + ' × ' + sizeCm + ' سم.';
+        } catch (error) {
+          status.textContent = 'تعذّر تجهيز بيانات مقاس الطباعة. حاول مرة أخرى.';
+        }
       }, 'image/png');
     }
 
     nameInput.addEventListener('input', updatePreview);
+    sizeInput.addEventListener('change', updatePreview);
     resolutionInput.addEventListener('change', updatePreview);
     downloadButton.addEventListener('click', downloadYearPNG);
     updatePreview();
