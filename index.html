@@ -83,7 +83,7 @@
   #yearNumber {
     height:43%; display:flex; align-items:center; justify-content:center;
     font-family: Georgia, "Times New Roman", serif;
-    font-size:clamp(76px, 27vw, 142px); line-height:1;
+    font-size:clamp(85px, 30vw, 155px); line-height:1;
     color:#252525; direction:ltr;
   }
   #yearDivider {
@@ -445,7 +445,7 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.direction = 'ltr';
-      let yearFont = Math.round(resolution * 0.29);
+      let yearFont = Math.round(resolution * 0.34);
       ctx.font = `${yearFont}px Georgia, "Times New Roman", serif`;
       ctx.fillText('2027', resolution / 2, yearTop + yearHeight / 2, resolution - padding * 2);
 
@@ -454,7 +454,7 @@
       ctx.fillRect(resolution * 0.05, dividerY, resolution * 0.90, Math.max(5, resolution * 0.006));
 
       const maxWidth = resolution * 0.88;
-      let fontSize = Math.round(resolution * 0.25);
+      let fontSize = Math.round(resolution * 0.21);
       let lines = [];
       let lineHeight = 0;
 
